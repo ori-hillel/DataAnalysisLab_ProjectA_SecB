@@ -12,6 +12,7 @@ from index import build_index
 from retrieve import search_batch
 
 
+
 def run(queries: List[str]) -> List[List[int]]:
     """
     Rank corpus pages for each query.
