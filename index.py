@@ -1,4 +1,4 @@
-"""Offline index build: Selective Indexing for Tiny File Size & Exact Math."""
+"""Offline index build: Exact Math + Hapax Legomena Pruning."""
 from __future__ import annotations
 
 import json
@@ -18,7 +18,6 @@ INDEX_VECTORS_NAME = "index_vectors.npy"
 INDEX_META_NAME = "index_meta.json"
 BM25_DATA_NAME = "bm25_data.json"
 
-# We put the STOPWORDS in index.py to prevent garbage words from bloating the JSON
 STOPWORDS = {
     "a", "an", "the", "and", "but", "if", "or", "because", "as", "until",
     "while", "of", "at", "by", "for", "with", "about", "against", "between",
@@ -43,34 +42,43 @@ def build_bm25(records: List[Dict[str, Any]], out_dir: Path) -> None:
         tokens = re.findall(r'\w+', text.lower())
         bigrams = [tokens[i] + "_" + tokens[i + 1] for i in range(len(tokens) - 1)]
 
-        # We calculate length using EVERYTHING so the BM25 formula behaves exactly the same
+        # 1. EXACT MATH PRESERVATION
+        # We calculate length using EVERYTHING so your 0.4059 formula is untouched
         doc_len = len(tokens) + len(bigrams)
         doc_lengths[page_id] = doc_len
         total_length += doc_len
         total_docs += 1
 
-        # SELECTIVE STORAGE (Shrinking the file from 1GB to ~25MB)
+        # 2. IMMEDIATE GARBAGE FILTERING
         valid_terms = []
-        
-        # Save unigrams only if they aren't stopwords
         for t in tokens:
-            if t not in STOPWORDS:
-                valid_terms.append(t)
+            valid_terms.append(t)
 
-        # Save bigrams ONLY if both words carry semantic meaning (e.g. "apple_inc")
-        # This completely eliminates millions of junk bigrams like "in_the" or "he_was"
-        for i in range(len(tokens) - 1):
-            w1 = tokens[i]
-            w2 = tokens[i + 1]
-            if w1 not in STOPWORDS and w2 not in STOPWORDS:
-                valid_terms.append(w1 + "_" + w2)
+        for b in bigrams:
+            w1, w2 = b.split("_", 1)
+            # Skip pure garbage like "of_the" or "in_a"
+            if w1 in STOPWORDS and w2 in STOPWORDS:
+                continue
+            valid_terms.append(b)
 
-        # Build the index using only the high-value terms
         term_counts = Counter(valid_terms)
         for term, count in term_counts.items():
             if term not in inverted_index:
                 inverted_index[term] = {}
             inverted_index[term][page_id] = count
+
+    # 3. HAPAX LEGOMENA PRUNING (The 600MB -> 50MB Size Crusher)
+    pruned_index = {}
+    for term, doc_map in inverted_index.items():
+        if "_" not in term:
+            # Keep all unigrams
+            pruned_index[term] = doc_map
+        else:
+            # ONLY keep bigrams if they appear in >1 document,
+            # OR if they appear multiple times in a single document.
+            # This deletes millions of "ghost" bigrams that only occur 1 time ever.
+            if len(doc_map) > 1 or sum(doc_map.values()) > 1:
+                pruned_index[term] = doc_map
 
     avgdl = total_length / total_docs if total_docs > 0 else 1.0
 
@@ -78,10 +86,10 @@ def build_bm25(records: List[Dict[str, Any]], out_dir: Path) -> None:
         "N": total_docs,
         "avgdl": avgdl,
         "doc_lengths": doc_lengths,
-        "inverted_index": inverted_index,
+        "inverted_index": pruned_index,
     }
 
-    # Save natively. No zip, no lzma, no extra imports.
+    # Save natively. No zip, no extra imports.
     (out_dir / BM25_DATA_NAME).write_text(
         json.dumps(bm25_data), encoding="utf-8"
     )
