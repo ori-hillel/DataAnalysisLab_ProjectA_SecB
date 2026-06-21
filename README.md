@@ -1,30 +1,38 @@
-# Section B — Retrieval pipeline
+# Project A - Section B: Hybrid Search Engine
 
-## Setup
+### Team Members
+- Ori Hillel
+- Harel Tzoran
+
+## Pre-computed Artifacts (Git LFS)
+To allow a seamless run during grading without needing an index rebuild, all pre-computed artifacts are tracked and saved directly in the repository via Git LFS:
+
+- `artifacts/index_vectors.npy`: Pre-computed dense embedding matrix.
+- `artifacts/index_meta.json`: Core mapping coordinates linking vector indices to document and chunk IDs.
+- `artifacts/bm25_data.json`: Pre-computed inverted index database and document lengths used for BM25 calculation (1GB file handled via LFS).
+
+## Setup & Execution
+
+### 1. Clone the Repository
+Open your terminal and run the following commands to clone the repository and navigate into the project directory:
 
 ```bash
-cd path/to/student
+git clone [https://github.com/ori-hillel/DataAnalysisLab_ProjectA_SecB.git](https://github.com/ori-hillel/DataAnalysisLab_ProjectA_SecB.git)
+cd DataAnalysisLab_ProjectA_SecB
+```
+
+### 2. Dependencies
+Install the required python libraries using the provided requirements file (in case you haven't already):
+
+```bash
 pip install -r requirements.txt
 ```
 
-Corpus lives at **`data/Wikipedia Entries/`** (included in the handout).
+### 3. Running Evaluation
+Since the pre-computed indices are stored inside the repository via Git LFS, the evaluation suite runs out-of-the-box on a fresh clone without any manual compilation or rebuilding steps.
 
-## Build index (offline, not timed — your machine only)
-
-Run once locally to create `artifacts/`. **Submit these files** in your repo; staff do not rebuild the index at grading time.
-
-```bash
-python scripts/build_index.py
-```
-
-## Public self-test
-
-After building, verify a fresh run loads your submitted artifacts (no rebuild):
+Run the evaluation script from the root directory:
 
 ```bash
 python scripts/eval_public.py
 ```
-
-## Submit
-
-Public GitHub repo with this code, **required** `artifacts/`, and a concise README documenting artifact paths. See the assignment PDF for video and grading details.
