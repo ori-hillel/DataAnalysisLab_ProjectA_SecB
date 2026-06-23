@@ -4,6 +4,9 @@
 - Ori Hillel
 - Harel Tzoran
 
+### Video Presentation
+- **Project Walkthrough & Evaluation Video:** https://drive.google.com/file/d/1vE2uV11husESTCxOMyUPtls4TjcBbPW1/view?usp=drive_link
+
 ## Pre-computed Artifacts (Git LFS)
 To allow a seamless run during grading without needing an index rebuild, all pre-computed artifacts are tracked and saved directly in the repository via Git LFS:
 
